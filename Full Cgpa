@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta tags for character set and responsive design -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Title of the webpage -->
+    <title>CGPA Calculator</title>
+    <!-- Google Fonts for the 'Inter' font family -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS Variables for easy theme management --- */
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary-text-color: #ffffff;
+            --secondary-text-color: #b3b3b3;
+            --accent-color: #e53e3e; /* Red for primary actions */
+            --accent-hover-color: #c53030;
+            --border-color: #333333;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --success-color: #28a745; /* Green for success states */
+            --info-color: #007bff; /* Blue for info states */
+            --warning-color: #ffc107; /* Yellow for reset/warning */
+        }
+
+        /* --- General Body and Element Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text-color);
+            display: flex;
+            flex-direction: column; /* Allow footer to sit at the bottom */
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- Welcome Page (Fullscreen Overlay) --- */
+        .welcome-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(45deg, #121212, #2c1a1a);
+            z-index: 2000;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+            padding: 1rem;
+        }
+        
+        .welcome-page.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .welcome-page h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            animation: slideInFromTop 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .welcome-page p {
+            font-size: 1.25rem;
+            color: var(--secondary-text-color);
+            margin-bottom: 3rem;
+            animation: slideInFromBottom 0.8s ease-out 0.4s forwards;
+            opacity: 0;
+        }
+        
+        .welcome-page .btn {
+            width: auto; /* Button width based on content */
+            padding: 1rem 3rem;
+            animation: slideInFromBottom 0.8s ease-out 0.8s forwards, pulse 2s infinite 1s;
+            opacity: 0;
+        }
+        
+        .welcome-page .btn:hover {
+           animation-play-state: paused; /* Pause pulse animation on hover */
+        }
+
+        /* --- Main App Container --- */
+        .app-container {
+            width: 100%;
+            max-width: 80rem;
+            margin: auto;
+        }
+
+        /* --- Calculator Page --- */
+        .calculator-page {
+            display: none; /* Initially hidden */
+            animation: fadeIn 0.5s ease-in-out;
+            width: 100%;
+        }
+
+        .calculator-page > h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .semesters-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two-column layout for semesters */
+            gap: 2rem;
+        }
+
+        /* --- Semester Card --- */
+        .semester-card {
+            background-color: var(--card-color);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .semester-card h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* --- Form Elements --- */
+        .input-form {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--primary-text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.3);
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.7rem 1.2rem; /* Standard button padding */
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.9rem; /* Slightly smaller font size */
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            width: auto; /* Make button width fit content */
+            display: inline-block; /* Allow auto width */
+        }
+        
+        .semester-actions {
+            display: flex; /* Use flexbox for button alignment */
+            justify-content: space-between; /* Space out buttons */
+            gap: 1rem; /* Add gap between buttons */
+            margin-top: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--accent-color), #ff7575);
+            color: var(--primary-text-color);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, var(--success-color), #56c271);
+            color: var(--primary-text-color);
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-info {
+            background: linear-gradient(45deg, var(--info-color), #58a6ff);
+            color: var(--primary-text-color);
+        }
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(45deg, var(--warning-color), #ffd966);
+            color: #121212; /* Dark text for better contrast on yellow */
+        }
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        /* --- Table Styles --- */
+        .table-wrapper {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .course-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .course-table th, .course-table td {
+            padding: 0.9rem;
+            text-align: left;
+        }
+
+        .course-table thead {
+            background-color: #2a2a2a;
+            position: sticky;
+            top: 0;
+        }
+
+        .course-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .course-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .remove-btn {
+            background: none;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: var(--accent-color);
+            color: var(--primary-text-color);
+            transform: scale(1.05);
+        }
+
+        /* --- Results & CGPA Section --- */
+        .gpa-result, .cgpa-result {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            min-height: 2rem;
+        }
+        
+        .gpa-result .comment, .cgpa-result .comment {
+            display: block;
+            font-size: 1rem;
+            font-style: italic;
+            margin-top: 0.25rem;
+            color: var(--secondary-text-color);
+        }
+        
+        .cgpa-section {
+            margin-top: 2.5rem;
+            background-color: var(--card-color);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            text-align: center;
+        }
+
+        .cgpa-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .cgpa-result {
+            margin-top: 1.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        /* --- Footer --- */
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--secondary-text-color);
+            font-size: 0.9rem;
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            .semesters-container {
+                grid-template-columns: 1fr; /* Stack semesters on smaller screens */
+            }
+            .welcome-page h1 { font-size: 2.5rem; }
+            .calculator-page > h1 { font-size: 2rem; }
+            body { padding: 1rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .input-form {
+                grid-template-columns: 1fr; /* Stack form inputs on very small screens */
+            }
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInFromTop { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideInFromBottom { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(229, 62, 62, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+        }
+        
+        /* --- Custom Scrollbar --- */
+        .table-wrapper::-webkit-scrollbar { width: 8px; }
+        .table-wrapper::-webkit-scrollbar-track { background: var(--bg-color); }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        .table-wrapper::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* --- Notification --- */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-color);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+        }
+        .notification.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-20px); }
+    </style>
+</head>
+<body>
+    <!-- Welcome Page (Fullscreen Overlay) -->
+    <div id="welcome-page" class="welcome-page">
+        <h1>Welcome to CGPA Calculator</h1>
+        <p>Calculate your GPA and CGPA with a clean, modern interface.</p>
+        <button id="start-btn" class="btn btn-primary">Get Started</button>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Calculator Page -->
+        <div id="calculator-page" class="calculator-page">
+            <h1>CGPA Calculator</h1>
+            
+            <div class="semesters-container">
+                <!-- First Semester Card -->
+                <div id="semester1" class="semester-card">
+                    <!-- Semester Title -->
+                    <h2>First Semester</h2>
+                    <!-- Form for adding a new course -->
+                    <div class="input-form">
+                        <input type="text" id="course-name-1" placeholder="Course Name">
+                        <input type="number" id="course-unit-1" placeholder="Units" min="0">
+                        <select id="course-grade-1">
+                            <option value="">Grades</option>
+                            <option value="5">A</option> <option value="4">B</option> <option value="3">C</option>
+                            <option value="2">D</option> <option value="1">E</option> <option value="0">F</option>
+                        </select>
+                    </div>
+                    <!-- Button to add the course to the table -->
+                    <button id="add-course-btn-1" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">Add Course</button>
+                    
+                    <!-- Wrapper for the course table to make it scrollable -->
+                    <div class="table-wrapper">
+                        <table class="course-table">
+                            <thead>
+                                <tr><th>Course</th><th>Units</th><th>Grade</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="course-list-1">
+                                <!-- Course rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Container for semester-specific actions -->
+                    <div class="semester-actions">
+                        <button id="calc-gpa-btn-1" class="btn btn-success">Calculate GPA</button>
+                        <button id="reset-gpa-btn-1" class="btn btn-reset">Reset</button>
+                    </div>
+                    <!-- Element to display the calculated GPA result -->
+                    <div id="gpa-result-1" class="gpa-result"></div>
+                </div>
+
+                <!-- Second Semester Card -->
+                <div id="semester2" class="semester-card">
+                    <!-- Semester Title -->
+                    <h2>Second Semester</h2>
+                     <!-- Form for adding a new course -->
+                    <div class="input-form">
+                        <input type="text" id="course-name-2" placeholder="Course Name">
+                        <input type="number" id="course-unit-2" placeholder="Units" min="0">
+                        <select id="course-grade-2">
+                            <option value="">Grades</option>
+                            <option value="5">A</option> <option value="4">B</option> <option value="3">C</option>
+                            <option value="2">D</option> <option value="1">E</option> <option value="0">F</option>
+                        </select>
+                    </div>
+                    <!-- Button to add the course to the table -->
+                    <button id="add-course-btn-2" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">Add Course</button>
+                    
+                    <!-- Wrapper for the course table -->
+                    <div class="table-wrapper">
+                        <table class="course-table">
+                            <thead>
+                                <tr><th>Course</th><th>Units</th><th>Grade</th><th>Action</th></tr>
+                            </thead>
+                            <tbody id="course-list-2">
+                                <!-- Course rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Container for semester-specific actions -->
+                    <div class="semester-actions">
+                        <button id="calc-gpa-btn-2" class="btn btn-success">Calculate GPA</button>
+                        <button id="reset-gpa-btn-2" class="btn btn-reset">Reset</button>
+                    </div>
+                    <!-- Element to display the calculated GPA result -->
+                    <div id="gpa-result-2" class="gpa-result"></div>
+                </div>
+            </div>
+
+            <!-- Final CGPA Calculation Section -->
+            <div class="cgpa-section">
+                <div class="cgpa-actions">
+                    <button id="calc-cgpa-btn" class="btn btn-info">Calculate Final CGPA</button>
+                    <button id="reset-all-btn" class="btn btn-reset">Reset All</button>
+                </div>
+                <div id="cgpa-result" class="cgpa-result"></div>
+            </div>
+
+        </div>
+        <!-- Footer Section -->
+        <footer class="footer">
+            Created by Simon
+        </footer>
+    </div>
+    
+    <!-- Notification Element for showing alerts -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // This event listener ensures the script runs only after the entire HTML document has been loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element Selection ---
+            const welcomePage = document.getElementById('welcome-page'); // The initial welcome screen
+            const calculatorPage = document.getElementById('calculator-page'); // The main calculator interface
+            const startBtn = document.getElementById('start-btn'); // The "Get Started" button
+            const notificationEl = document.getElementById('notification'); // The custom alert/notification bar
+            
+            // --- State Variables ---
+            let gpa1 = 0, gpa2 = 0; // Variables to store calculated GPAs for each semester
+            const gradeMap = { '5': 'A', '4': 'B', '3': 'C', '2': 'D', '1': 'E', '0': 'F' }; // Maps grade values to letters
+
+            // --- Local Storage Functions ---
+
+            /**
+             * Loads courses from local storage for a given semester and populates the table.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            const loadCourses = (semester) => {
+                const courses = JSON.parse(localStorage.getItem(`courses_sem${semester}`)) || []; // Get courses or an empty array
+                courses.forEach(c => addCourseToTable(c.name, c.unit, c.grade, semester)); // Add each course to the table
+            };
+
+            /**
+             * Saves the current list of courses for a semester to local storage.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            const saveCourses = (semester) => {
+                const rows = document.querySelectorAll(`#course-list-${semester} tr`); // Get all course rows from the table
+                const courses = Array.from(rows).map(row => ({ // Convert rows to an array of course objects
+                    name: row.cells[0].textContent,
+                    unit: row.cells[1].textContent,
+                    grade: row.dataset.gradeValue,
+                }));
+                localStorage.setItem(`courses_sem${semester}`, JSON.stringify(courses)); // Save the array as a JSON string
+            };
+
+            // --- Core Application Functions ---
+
+            /**
+             * Adds a new course row to the specified semester's table.
+             * @param {string} name - The name of the course.
+             * @param {number} unit - The credit units for the course.
+             * @param {string} gradeValue - The numerical value of the grade.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            function addCourseToTable(name, unit, gradeValue, semester) {
+                const courseList = document.getElementById(`course-list-${semester}`); // Get the table body
+                const row = courseList.insertRow(); // Insert a new row
+                row.dataset.gradeValue = gradeValue; // Store the grade value in the row's dataset for later calculation
+                
+                // Set the HTML content of the new row
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td>${unit}</td>
+                    <td>${gradeMap[gradeValue]}</td>
+                    <td><button class="remove-btn">Remove</button></td>
+                `;
+
+                // Add an event listener to the new 'Remove' button
+                row.querySelector('.remove-btn').addEventListener('click', () => {
+                    row.remove(); // Remove the row from the table
+                    saveCourses(semester); // Update local storage
+                });
+            }
+            
+            /**
+             * Sets up all event listeners for a given semester.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            function setupSemester(semester) {
+                document.getElementById(`add-course-btn-${semester}`).addEventListener('click', () => handleAddCourse(semester));
+                document.getElementById(`calc-gpa-btn-${semester}`).addEventListener('click', () => handleCalculateGpa(semester));
+                document.getElementById(`reset-gpa-btn-${semester}`).addEventListener('click', () => handleResetSemester(semester));
+                loadCourses(semester); // Load saved courses on startup
+            }
+            
+            /**
+             * Displays a custom notification message at the bottom of the screen.
+             * @param {string} message - The message to display.
+             */
+            function showNotification(message) {
+                notificationEl.textContent = message; // Set the text
+                notificationEl.classList.add('show'); // Make it visible
+                setTimeout(() => { // Hide it after 3 seconds
+                    notificationEl.classList.remove('show');
+                }, 3000);
+            }
+
+            /**
+             * Handles the logic for adding a course when the "Add Course" button is clicked.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            function handleAddCourse(semester) {
+                const nameInput = document.getElementById(`course-name-${semester}`);
+                const unitInput = document.getElementById(`course-unit-${semester}`);
+                const gradeInput = document.getElementById(`course-grade-${semester}`);
+
+                const name = nameInput.value.trim(); // Get and trim course name
+                const unit = parseFloat(unitInput.value); // Get and parse units
+                const grade = gradeInput.value; // Get grade value
+
+                // Validate the inputs
+                if (!name || isNaN(unit) || unit < 0 || grade === "") {
+                    showNotification('Please fill all fields correctly.');
+                    return; // Stop the function if validation fails
+                }
+
+                addCourseToTable(name, unit, grade, semester); // Add the course
+                saveCourses(semester); // Save the new state
+
+                // Clear the input fields
+                nameInput.value = '';
+                unitInput.value = '';
+                gradeInput.value = '';
+            }
+
+            /**
+             * Generates a motivational comment based on the calculated score.
+             * @param {number} score - The GPA or CGPA score.
+             * @returns {string} - The comment.
+             */
+            function getGpaComment(score) {
+                if (score >= 4.5) return "Excellent!";
+                if (score < 3.5) return "You can do better.";
+                return "Good job!";
+            }
+
+            /**
+             * Calculates and displays the GPA for a specific semester.
+             * @param {number} semester - The semester number (1 or 2).
+             */
+            function handleCalculateGpa(semester) {
+                const rows = document.querySelectorAll(`#course-list-${semester} tr`);
+                const gpaResultEl = document.getElementById(`gpa-result-${semester}`);
+
+                if (rows.length === 0) {
+                    showNotification(`Please add courses to Semester ${semester} first.`);
+                    gpaResultEl.innerHTML = ''; // Clear previous results
+                    return;
+                }
+
+                let totalPoints = 0;
+                let totalUnits = 0;
+
+                // Loop through each course row to calculate total points and units
+                rows.forEach(row => {
+                    const unit = parseFloat(row.cells[1].textContent);
+                    totalUnits += unit;
+                    totalPoints += unit * parseFloat(row.dataset.gradeValue);
+                });
+
+                const gpa = totalUnits > 0 ? (totalPoints / totalUnits) : 0; // Calculate GPA
+                const gpaFixed = gpa.toFixed(2); // Format to 2 decimal places
+                
+                // Store the calculated GPA in the state variable
+                if (semester === 1) gpa1 = gpa;
+                if (semester === 2) gpa2 = gpa;
+
+                const comment = getGpaComment(gpa); // Get a comment based on the score
+                gpaResultEl.innerHTML = `Semester GPA: ${gpaFixed} <span class="comment">${comment}</span>`; // Display the result
+            }
+
+            /**
+             * Calculates and displays the final Cumulative GPA (CGPA).
+             */
+            function calculateCgpa() {
+                handleCalculateGpa(1); // Recalculate first semester GPA to be sure it's up to date
+                handleCalculateGpa(2); // Recalculate second semester GPA
+                
+                const rows1 = document.querySelectorAll('#course-list-1 tr');
+                const rows2 = document.querySelectorAll('#course-list-2 tr');
+                const cgpaResultEl = document.getElementById('cgpa-result');
+                
+                if (rows1.length === 0 && rows2.length === 0) {
+                     showNotification('Please add courses to at least one semester.');
+                     cgpaResultEl.innerHTML = ''; // Clear previous result
+                     return;
+                }
+                
+                let grandTotalPoints = 0;
+                let grandTotalUnits = 0;
+
+                // Combine points and units from both semesters
+                rows1.forEach(row => {
+                    const unit = parseFloat(row.cells[1].textContent);
+                    grandTotalUnits += unit;
+                    grandTotalPoints += unit * parseFloat(row.dataset.gradeValue);
+                });
+                
+                rows2.forEach(row => {
+                    const unit = parseFloat(row.cells[1].textContent);
+                    grandTotalUnits += unit;
+                    grandTotalPoints += unit * parseFloat(row.dataset.gradeValue);
+                });
+
+                const cgpa = grandTotalUnits > 0 ? (grandTotalPoints / grandTotalUnits) : 0; // Calculate CGPA
+                const cgpaFixed = cgpa.toFixed(2); // Format to 2 decimal places
+                const comment = getGpaComment(cgpa); // Get a comment
+
+                cgpaResultEl.innerHTML = `Your Final CGPA is: ${cgpaFixed} <span class="comment">${comment}</span>`; // Display the final result
+            }
+
+            /**
+             * Resets all courses and results for a single semester.
+             * @param {number} semester - The semester to reset.
+             */
+            function handleResetSemester(semester) {
+                document.getElementById(`course-list-${semester}`).innerHTML = ''; // Clear the table
+                document.getElementById(`gpa-result-${semester}`).innerHTML = ''; // Clear the result display
+                if (semester === 1) gpa1 = 0; // Reset state variable
+                if (semester === 2) gpa2 = 0; // Reset state variable
+                saveCourses(semester); // Save the empty state to local storage
+                showNotification(`First Semester has been reset.`);
+            }
+            
+            /**
+             * Resets the entire calculator, including both semesters and the final CGPA.
+             */
+            function handleResetAll() {
+                handleResetSemester(1); // Reset first semester
+                handleResetSemester(2); // Reset second semester
+                document.getElementById('cgpa-result').innerHTML = ''; // Clear the final CGPA result
+                showNotification('Calculator has been completely reset.');
+            }
+            
+            // --- Initial Event Listeners Setup ---
+
+            // Listener for the "Get Started" button
+            startBtn.addEventListener('click', () => {
+                welcomePage.classList.add('hidden'); // Hide the welcome screen
+                calculatorPage.style.display = 'block'; // Show the calculator
+            });
+
+            // Set up event listeners for both semester cards
+            setupSemester(1);
+            setupSemester(2);
+            
+            // Listener for the final "Calculate CGPA" button
+            document.getElementById('calc-cgpa-btn').addEventListener('click', calculateCgpa);
+            // Listener for the "Reset All" button
+            document.getElementById('reset-all-btn').addEventListener('click', handleResetAll);
+        });
+    </script>
+</body>
+</html>
+
